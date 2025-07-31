@@ -71,3 +71,73 @@ SceneManager 또는 UIManager 클래스를 만들어 Panel 전환을 관리하�
 
 **명확하고 유지보수가 중요하며, 특히 협업중**이라면 SerizlizeField 로 Inspector에 직접 연결하는 방식이 훨씬 안전하고 효율적이다.</br>
 
+### 📌싱글톤
+#### 싱글톤의 필수 조건
+1. 단일 인스턴스 보장 (Single Instance)</br>
+2. 전역 접근점 제공 (Global Access Point)</br>
+3. 인스턴스 생성 통제 (Controlled Instantiation)</br>
+4. (필요시) 스레드 안정성 (Thread Safety)</br>
+5. (선택사항) 상속 제한 ()</br>
+
+#### 유니티 싱글톤 구현
+MonoBehaviour 를 상속해야 GameObject 에 붙일 수 있고, 생성자(new)를 사용할 수 없다.
+```csharp
+// Unity
+using UnityEngine;
+
+public class SceneManager : MonoBehaviour
+{
+    #region Singleton
+
+    private static SceneManager instance;
+    public static SceneManager Instance
+    {
+        get
+        {
+            // 
+            if(instance == null)
+            {
+                instance = FindAnyObjectByType<SceneManager>();
+            }
+            
+            if(instance == null)
+            {
+                GameObject go = new GameObject("SceneManager");
+                instance = go.AddComponent<SceneManager>();
+            }
+
+            return instance;
+        }
+    }
+
+    private void SingletonAwake()
+    {
+        if(instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    #endregion
+
+    private void Awake()
+    {
+        SingletonAwake();
+
+    }
+}
+```
+
+#### 차이점 (C# vs Unity)
+|항목|C# 일반 구현|Unity 구현|
+|:---:|:---|:---|
+|생성자 사용|private MyClass()|불가 -> Awake() , OnEnable() 활용|
+|인스턴스 초기화|Lazy<T> 또는 static 초기화|FindObjectOfType + 새 GameObject 생성|
+|씬 전환 관리|불필요|DontDestroyOnLoad(gameObject) 필요|
+|스레드 안전성|lock, LazyThreadSafetyMode 활용|일반적으로 단일 스레드 환경이므로 생략 가능|
+|에디터 재실행|-|도메인 리로드 시 static 값 유지 문제 주의|
+|종료 처리|-|OnApplicationQuit 등에서 정리 권장|
